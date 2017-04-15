@@ -1,0 +1,7 @@
+pytrends
+pandas
+django
+psycopg2
+click
+dateutil
+GDAX
