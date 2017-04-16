@@ -37,5 +37,5 @@ def get_pg_connection(env="local"):
 def query_pg(query, env="local"):
 
     con = get_pg_connection(env)
-    LOGGER.info("Executing query:\n\n%s\n\n", query)
+    LOGGER.info("Executing query:\n\n%s\n", query)
     return pd.read_sql(query, con=con)

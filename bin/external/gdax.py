@@ -1,7 +1,7 @@
 import datetime as dt
 import GDAX
 from bin import utils
-from models import GDAXPrice
+from gdax.models import GDAXPrice
 
 LOGGER = utils.get_logger(__name__)
 
