@@ -1,13 +1,16 @@
 import datetime as dt
+from time import sleep
 import dateutil
 import click
 import utils
-from external import gdax, trends
+from gdax.external import HistoricPriceInterface
+from trends.external import TrendInterface
 
 
 LOGGER = utils.get_logger(__name__)
 COINS = utils.load_config("coins")
-ISO = "%Y-%m-%d"
+ISO_DAILY = "%Y-%m-%d"
+ISO_HOURLY = "%Y-%m-%dT%H"
 
 
 class CoinDownloader(object):
@@ -24,29 +27,37 @@ class CoinDownloader(object):
         self.window_hours = window_hours
         if not coins:
             self.coins = list(COINS.keys())
+        self.datetimes = [dateutil.parser.parse(start_date)]
+        while self.datetimes[-1] <= dateutil.parser.parse(end_date):
+            self.datetimes.append(self.datetimes[-1] + dt.timedelta(hours=window_hours))
         self.dates = [dateutil.parser.parse(start_date)]
         while self.dates[-1] <= dateutil.parser.parse(end_date):
-            self.dates.append(self.dates[-1] + dt.timedelta(hours=window_hours))
+            self.dates.append(self.dates[-1] + dt.timedelta(days=1))
 
     def _dl_gdax(self):
-        gdax_client = gdax.HistoricPriceInterface()
+        gdax_client = HistoricPriceInterface()
         for coin in self.coins:
             for i, date in enumerate(self.dates):
                 gdax_client.load(
                     product=coin.upper() + '-USD',
-                    start_time=date.strftime(ISO),
-                    end_time=(date + dt.timedelta(hours=self.window_hours)).strftime(ISO),
+                    start_time=date.strftime(ISO_DAILY),
+                    end_time=(date + dt.timedelta(days=1)).strftime(ISO_DAILY),
                     granularity=60*60*self.window_hours
                 )
                 gdax_client.store()
+                # Public API limits to 3 / second
+                # https://docs.gdax.com/#rate-limits
+                sleep(1)
 
     def _dl_trends(self):
-        trends_client = trends.TrendInterface()
-        for i, date in enumerate(self.dates):
+        trends_client = TrendInterface()
+        for i, datetime in enumerate(self.datetimes):
             trends_client.load(
                 kw_list=[COINS[c] for c in self.coins],
-                start_date=date.strftime(ISO),
-                end_date=(date + dt.timedelta(hours=self.window_hours)).strftime(ISO)
+                start_date=datetime.strftime(ISO_DAILY),
+                end_date=(datetime + dt.timedelta(hours=self.window_hours)).strftime(ISO_DAILY),
+                start_hour=datetime.hour,
+                end_hour=(datetime + dt.timedelta(hours=self.window_hours)).hour
             )
 
     def run(self):
@@ -74,4 +85,5 @@ def main(start_date, end_date, window_hours, coins):
     dler.run()
 
 if __name__ == "__main__":
+
     main()

@@ -15,6 +15,10 @@ Every application has a file `external.py` which has wrapper classes for externa
 
 # Useful help articles
 
+## General django
+
+- ['Improperly configured' error when running scripts](http://stackoverflow.com/questions/15556499/django-db-settings-improperly-configured-error)
+
 ## Postgres
 
 - [postgres + django blog post](http://www.marinamele.com/taskbuster-django-tutorial/install-and-configure-posgresql-for-django)

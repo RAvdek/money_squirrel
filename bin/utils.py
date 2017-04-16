@@ -4,7 +4,7 @@ import logging
 import psycopg2
 import pandas as pd
 
-logging.basicConfig(format='%(asctime)s | %(levelname)s | %(message)s')
+logging.basicConfig(format='%(asctime)s|%(name)s|%(levelname)s|%(message)s')
 
 
 def get_logger(name):
