@@ -22,8 +22,10 @@ class TrendInterface(object):
         self.start_hour = None
         self.end_hour = None
         self.time_frame = None
-        self.interest_by_region = None
-        self.interest_over_time = None
+        self.data = {
+            'interest_by_region': None,
+            'interest_over_time': None
+        }
 
     def _correct_input(self):
         if not self.start_hour:
@@ -37,7 +39,7 @@ class TrendInterface(object):
         self.time_frame = " ".join([self.start_time, self.end_time])
 
     def _store_interest_by_region(self):
-        ibr_data = self.interest_by_region.T.to_dict()
+        ibr_data = self.data['interest_by_region'].T.to_dict()
         for geo_name in ibr_data:
             ibr = InterestByRegion(
                 geo_name=geo_name,
@@ -48,7 +50,7 @@ class TrendInterface(object):
             ibr.save()
 
     def _store_interest_over_time(self):
-        iot_data = self.interest_over_time.T.to_dict()
+        iot_data = self.data['interest_over_time'].T.to_dict()
         for ts in iot_data:
             iot = InterestOverTime(
                 geo_name=self.geo_name,
@@ -81,8 +83,10 @@ class TrendInterface(object):
             geo=self.geo_name,
             timeframe=self.time_frame
         )
-        self.interest_by_region = self.client.interest_by_region()
-        self.interest_over_time = self.client.interest_over_time()
+        self.data['interest_by_region'] = \
+            self.client.interest_by_region()
+        self.data['interest_over_time'] = \
+            self.client.interest_over_time()
 
     def store(self):
         self._store_interest_by_region()
