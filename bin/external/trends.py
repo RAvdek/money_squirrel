@@ -1,6 +1,6 @@
 import dateutil
 from pytrends.request import TrendReq
-from money_squirrel import utils
+from bin import utils
 from trends.models import InterestByRegion, InterestOverTime
 
 

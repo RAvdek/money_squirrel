@@ -1,6 +1,6 @@
 import datetime as dt
 import GDAX
-from money_squirrel import utils
+from bin import utils
 from models import GDAXPrice
 
 LOGGER = utils.get_logger(__name__)
