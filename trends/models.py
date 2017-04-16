@@ -18,7 +18,7 @@ class InterestByRegion(models.Model):
 class InterestOverTime(models.Model):
 
     geo_name = models.CharField(max_length=100, default=None, blank=True, null=True)
-    timestamp = models.DateTimeField(default=None, blank=True, null=True)
+    dt = models.DateTimeField(default=None, blank=True, null=True)
     start_time = models.DateTimeField()
     end_time = models.DateTimeField()
     scores = JSONField()
