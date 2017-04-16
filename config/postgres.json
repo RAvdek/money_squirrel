@@ -1,0 +1,7 @@
+{
+  "local": {
+    "host": "localhost",
+    "dbname": "ms",
+    "user": "ravdek"
+  }
+}

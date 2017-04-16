@@ -1,3 +1,4 @@
 *.pyc
 *keys.json
 .idea*
+migrations*
