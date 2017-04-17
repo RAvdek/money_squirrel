@@ -6,12 +6,14 @@ Every application has a file `external.py` which has wrapper classes for externa
 
 # TODO
 
-- Make a facade which will download all data. Should come with a command line interface for easy update.
-- Download data. I'm thinking that hourly data information from a couple of years worth of data would work for a basic intro.
-- Perform initial analysis. I'm thinking we should try to predict hourly close price and volume based on overall Google trend data and previous history.
+## Dev
 - Will have to make custom methods for trends to handle data massaging as they hid the data.
-- What other data resources shold I be downloading data from? I'd like to do soem sentiment analysis on news headlines or summaries.
-- Create an "ETL" application for doing cleaning dumps of data. Can just do db to pandas to db
+- What other data resources should I be downloading data from? I'd like to do some sentiment analysis on news headlines or summaries.
+- Create an "ETL" application for doing cleaning dumps of data. Can just do db to pandas to db.
+
+## Analysis
+- Mean interest over time is not correlating to next day trade delta. This is part due to the way I'm calculating, but also because there is no baseline of comparison for the search interest. Everything will just be "how popular compared to the most popular item".
+- Should pick an easy "anchoring" search term to include when pulling from trends API.
 
 # Useful help articles
 
