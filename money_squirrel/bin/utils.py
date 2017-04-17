@@ -5,6 +5,9 @@ import psycopg2
 import pandas as pd
 
 logging.basicConfig(format='%(asctime)s|%(name)s|%(levelname)s|%(message)s')
+ISO_DAILY = '%Y-%m-%d'
+ISO_HOURLY = '%Y-%m-%dT%H'
+ISO = '%Y-%m-%dT%H:%M:%S'
 
 
 def get_logger(name):
@@ -19,7 +22,8 @@ LOGGER = get_logger(__name__)
 
 def load_config(name):
 
-    path = os.path.join(os.getcwd(), 'config', name + '.json')
+    app_path = os.path.dirname(os.path.dirname(__file__))
+    path = os.path.join(app_path, 'config', name + '.json')
     LOGGER.info("Loading JSON from %s", path)
     with open(path, "r") as f:
         return json.load(f)

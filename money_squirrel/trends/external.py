@@ -1,4 +1,3 @@
-import dateutil
 import pandas as pd
 from pytrends.request import TrendReq
 from bin import utils
@@ -16,10 +15,8 @@ class TrendInterface(object):
             KEYS['gmail'],
             KEYS['gpass']
         )
-        self.start_date = None
-        self.end_date = None
-        self.start_hour = None
-        self.end_hour = None
+        self.start_dt = None
+        self.end_dt = None
         self.request_payload = dict()
         self.data = {
             'interest_by_region': None,
@@ -27,24 +24,20 @@ class TrendInterface(object):
         }
 
     def _correct_input(self):
-        if not self.start_hour:
-            self.start_hour = 0
-        self.start_hour = str(self.start_hour).zfill(2)
-        if not self.end_hour:
-            self.end_hour = 23
-        self.end_hour = str(self.end_hour).zfill(2)
-        self.start_time = self.start_date + "T" + self.start_hour
-        self.end_time = self.end_date + "T" + self.end_hour
+
         self.request_payload["timeframe"] = \
-            " ".join([self.start_time, self.end_time])
+            " ".join([
+                self.start_dt.strftime(utils.ISO_HOURLY),
+                self.end_dt.strftime(utils.ISO_HOURLY)
+            ])
 
     def _store_interest_by_region(self):
         ibr_data = self.data['interest_by_region'].T.to_dict()
         for geo in ibr_data:
             ibr = InterestByRegion(
                 geo=geo,
-                start_time=dateutil.parser.parse(self.start_time),
-                end_time=dateutil.parser.parse(self.end_time),
+                start_dt=self.start_dt,
+                end_dt=self.end_dt,
                 scores=ibr_data[geo]
             )
             LOGGER.info("Storing interest by region %s", ibr)
@@ -56,8 +49,8 @@ class TrendInterface(object):
             iot = InterestOverTime(
                 geo=self.request_payload["geo"],
                 dt=ts.to_datetime(),
-                start_time=dateutil.parser.parse(self.start_time),
-                end_time=dateutil.parser.parse(self.end_time),
+                start_dt=self.start_dt,
+                end_dt=self.end_dt,
                 scores=iot_data[ts]
             )
             LOGGER.info("Storing interest over time %s", iot)
@@ -79,16 +72,12 @@ class TrendInterface(object):
     def load(
             self,
             kw_list,
-            start_date,
-            end_date,
-            geo=None,
-            start_hour=None,
-            end_hour=None
+            start_dt,
+            end_dt,
+            geo=None
     ):
-        self.start_date = start_date
-        self.end_date = end_date
-        self.start_hour = start_hour
-        self.end_hour = end_hour
+        self.start_dt = start_dt
+        self.end_dt = end_dt
         self.request_payload = {
             "kw_list": kw_list,
             "geo": geo,

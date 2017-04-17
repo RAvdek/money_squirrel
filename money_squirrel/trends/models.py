@@ -10,15 +10,15 @@ from django.utils.encoding import python_2_unicode_compatible
 class InterestByRegion(models.Model):
 
     geo = models.CharField(max_length=100)
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    start_dt = models.DateTimeField()
+    end_dt = models.DateTimeField()
     scores = JSONField()
 
     def __str__(self):
         return str({
             "geo": self.geo,
-            "start_time": self.start_time,
-            "end_time": self.end_time,
+            "start_dt": self.start_dt,
+            "end_dt": self.start_dt,
             "scores": self.scores,
         })
 
@@ -28,15 +28,15 @@ class InterestOverTime(models.Model):
 
     geo = models.CharField(max_length=100, default=None, blank=True, null=True)
     dt = models.DateTimeField(default=None, blank=True, null=True)
-    start_time = models.DateTimeField()
-    end_time = models.DateTimeField()
+    start_dt = models.DateTimeField()
+    end_dt = models.DateTimeField()
     scores = JSONField()
 
     def __str__(self):
         return str({
             "geo": self.geo,
             "dt": self.dt,
-            "start_time": self.start_time,
-            "end_time": self.end_time,
+            "start_dt": self.start_dt,
+            "end_dt": self.end_dt,
             "scores": self.scores,
         })

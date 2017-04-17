@@ -38,15 +38,15 @@ class HistoricPriceInterface(GDAX.PublicClient):
     def load(
             self,
             product,
-            start_time,
-            end_time,
+            start_dt,
+            end_dt,
             granularity
     ):
         """ Download historical prices """
         self.request_payload = {
             "product": product,
-            "start_time": start_time,
-            "end_time": end_time,
+            "start": start_dt.strftime(utils.ISO),
+            "end": end_dt.strftime(utils.ISO),
             "granularity": granularity,
         }
         LOGGER.info(
@@ -54,10 +54,7 @@ class HistoricPriceInterface(GDAX.PublicClient):
             self.request_payload
         )
         self.data = self.getProductHistoricRates(
-            product=product,
-            start=start_time,
-            end=end_time,
-            granularity=granularity
+            **self.request_payload
         )
         LOGGER.info("Validating response")
         self._validate_data()

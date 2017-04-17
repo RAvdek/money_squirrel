@@ -9,8 +9,6 @@ from trends.external import TrendInterface
 
 LOGGER = utils.get_logger(__name__)
 COINS = utils.load_config("coins")
-ISO_DAILY = "%Y-%m-%d"
-ISO_HOURLY = "%Y-%m-%dT%H"
 
 
 class CoinDownloader(object):
@@ -20,61 +18,59 @@ class CoinDownloader(object):
             start_date,
             end_date,
             coins=None,
-            window_hours=6
+            window_hours=6,
+            dl_trends=True,
+            dl_gdax=True
     ):
         assert 24 % window_hours == 0
 
-        self.start_date = start_date
-        self.end_date = end_date
+        self.start_dt = dateutil.parser.parse(start_date)
+        self.end_dt = dateutil.parser.parse(end_date)
         self.window_hours = window_hours
         if not coins:
             self.coins = list(COINS.keys())
+        self.dl_gdax = dl_gdax
+        self.dl_trends = dl_trends
         # External interfaces
         self.gdax_client = HistoricPriceInterface()
         self.trends_client = TrendInterface()
 
-    def _dl_gdax(self, date):
-        date_string = date.strftime(ISO_DAILY)
-        next_date = (date + dt.timedelta(days=1))
-        next_date_string = next_date.strftime(ISO_DAILY)
+    def _increment_dt(self, start_dt):
+        return start_dt + dt.timedelta(hours=self.window_hours)
+
+    def _dl_gdax(self, start_dt):
+        # Have to iterate over the products
         for coin in self.coins:
             self.gdax_client.load(
                 product=coin.upper() + '-USD',
-                start_time=date_string,
-                end_time=next_date_string,
-                granularity=60*60*self.window_hours
+                start_dt=start_dt,
+                end_dt=self._increment_dt(start_dt),
+                granularity=60*60
             )
             self.gdax_client.store()
             # Public API limits to 3 / second
             # https://docs.gdax.com/#rate-limits
             sleep(1)
 
-    def _dl_trends(self, date):
-        next_date = (date + dt.timedelta(days=1))
-        datetime = date
-        while datetime < next_date:
-            next_datetime = (datetime + dt.timedelta(hours=self.window_hours))
-            self.trends_client.load(
-                kw_list=[COINS[c] + " currency"
-                         for c in self.coins],
-                start_date=datetime.strftime(ISO_DAILY),
-                end_date=next_datetime.strftime(ISO_DAILY),
-                start_hour=datetime.hour,
-                end_hour=next_datetime.hour
-            )
-            self.trends_client.store()
-            datetime = next_datetime
+    def _dl_trends(self, start_dt):
+        self.trends_client.load(
+            kw_list=[COINS[c] for c in self.coins],
+            start_dt=start_dt,
+            end_dt=self._increment_dt(start_dt)
+        )
+        self.trends_client.store()
 
     def run(self):
-        date_list = [dateutil.parser.parse(self.start_date)]
-        while date_list[-1] <= dateutil.parser.parse(self.end_date):
-            date_list.append(date_list[-1] + dt.timedelta(days=1))
-        for date in date_list:
+        query_dt = self.start_dt
+        while query_dt < self.end_dt:
             LOGGER.info(
                 "Downloading data for %s",
-                date.strftime("ISO_DAILY"))
-            self._dl_gdax(date)
-            self._dl_trends(date)
+                query_dt.strftime(utils.ISO_HOURLY))
+            if self.dl_gdax:
+                self._dl_gdax(query_dt)
+            if self.dl_trends:
+                self._dl_trends(query_dt)
+            query_dt = self._increment_dt(query_dt)
 
 
 @click.option("--window_hours", "-w",
