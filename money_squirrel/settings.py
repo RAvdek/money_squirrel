@@ -32,6 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'django_extensions',
     'gdax.apps.GdaxConfig',
     'trends.apps.TrendsConfig',
     'django.contrib.admin',

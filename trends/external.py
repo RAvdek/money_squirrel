@@ -54,8 +54,8 @@ class TrendInterface(object):
         iot_data = self.data['interest_over_time'].T.to_dict()
         for ts in iot_data:
             iot = InterestOverTime(
-                geo=self.geo,
-                timestamp=ts.to_datetime(),
+                geo=self.request_payload["geo"],
+                dt=ts.to_datetime(),
                 start_time=dateutil.parser.parse(self.start_time),
                 end_time=dateutil.parser.parse(self.end_time),
                 scores=iot_data[ts]

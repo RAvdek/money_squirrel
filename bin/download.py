@@ -22,47 +22,59 @@ class CoinDownloader(object):
             coins=None,
             window_hours=6
     ):
+        assert 24 % window_hours == 0
+
         self.start_date = start_date
         self.end_date = end_date
         self.window_hours = window_hours
         if not coins:
             self.coins = list(COINS.keys())
-        self.datetimes = [dateutil.parser.parse(start_date)]
-        while self.datetimes[-1] <= dateutil.parser.parse(end_date):
-            self.datetimes.append(self.datetimes[-1] + dt.timedelta(hours=window_hours))
-        self.dates = [dateutil.parser.parse(start_date)]
-        while self.dates[-1] <= dateutil.parser.parse(end_date):
-            self.dates.append(self.dates[-1] + dt.timedelta(days=1))
+        # External interfaces
+        self.gdax_client = HistoricPriceInterface()
+        self.trends_client = TrendInterface()
 
-    def _dl_gdax(self):
-        gdax_client = HistoricPriceInterface()
+    def _dl_gdax(self, date):
+        date_string = date.strftime(ISO_DAILY)
+        next_date = (date + dt.timedelta(days=1))
+        next_date_string = next_date.strftime(ISO_DAILY)
         for coin in self.coins:
-            for i, date in enumerate(self.dates):
-                gdax_client.load(
-                    product=coin.upper() + '-USD',
-                    start_time=date.strftime(ISO_DAILY),
-                    end_time=(date + dt.timedelta(days=1)).strftime(ISO_DAILY),
-                    granularity=60*60*self.window_hours
-                )
-                gdax_client.store()
-                # Public API limits to 3 / second
-                # https://docs.gdax.com/#rate-limits
-                sleep(1)
-
-    def _dl_trends(self):
-        trends_client = TrendInterface()
-        for i, datetime in enumerate(self.datetimes):
-            trends_client.load(
-                kw_list=[COINS[c] for c in self.coins],
-                start_date=datetime.strftime(ISO_DAILY),
-                end_date=(datetime + dt.timedelta(hours=self.window_hours)).strftime(ISO_DAILY),
-                start_hour=datetime.hour,
-                end_hour=(datetime + dt.timedelta(hours=self.window_hours)).hour
+            self.gdax_client.load(
+                product=coin.upper() + '-USD',
+                start_time=date_string,
+                end_time=next_date_string,
+                granularity=60*60*self.window_hours
             )
+            self.gdax_client.store()
+            # Public API limits to 3 / second
+            # https://docs.gdax.com/#rate-limits
+            sleep(1)
+
+    def _dl_trends(self, date):
+        next_date = (date + dt.timedelta(days=1))
+        datetime = date
+        while datetime < next_date:
+            next_datetime = (datetime + dt.timedelta(hours=self.window_hours))
+            self.trends_client.load(
+                kw_list=[COINS[c] + " currency"
+                         for c in self.coins],
+                start_date=datetime.strftime(ISO_DAILY),
+                end_date=next_datetime.strftime(ISO_DAILY),
+                start_hour=datetime.hour,
+                end_hour=next_datetime.hour
+            )
+            self.trends_client.store()
+            datetime = next_datetime
 
     def run(self):
-        self._dl_gdax()
-        self._dl_trends()
+        date_list = [dateutil.parser.parse(self.start_date)]
+        while date_list[-1] <= dateutil.parser.parse(self.end_date):
+            date_list.append(date_list[-1] + dt.timedelta(days=1))
+        for date in date_list:
+            LOGGER.info(
+                "Downloading data for %s",
+                date.strftime("ISO_DAILY"))
+            self._dl_gdax(date)
+            self._dl_trends(date)
 
 
 @click.option("--window_hours", "-w",
@@ -76,13 +88,13 @@ class CoinDownloader(object):
 @click.command()
 def main(start_date, end_date, window_hours, coins):
 
-    dler = CoinDownloader(
+    downloader = CoinDownloader(
         start_date=start_date,
         end_date=end_date,
         coins=coins,
         window_hours=window_hours
     )
-    dler.run()
+    downloader.run()
 
 if __name__ == "__main__":
 
