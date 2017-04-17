@@ -6,6 +6,7 @@ Every application has a file `external.py` which has wrapper classes for externa
 
 # TODO
 
+- Make a facade which will download all data. Should come with a command line interface for easy update.
 - Download data. I'm thinking that hourly data information from a couple of years worth of data would work for a basic intro.
 - Perform initial analysis. I'm thinking we should try to predict hourly close price and volume based on overall Google trend data and previous history.
 - Will have to make custom methods for trends to handle data massaging as they hid the data.
@@ -17,7 +18,6 @@ Every application has a file `external.py` which has wrapper classes for externa
 ## General django
 
 - ['Improperly configured' error when running scripts](http://stackoverflow.com/questions/15556499/django-db-settings-improperly-configured-error)
-- ['jupyter notebook from the admin.py shell'](http://stackoverflow.com/questions/35483328/how-to-setup-jupyter-ipython-notebook-for-django)
 
 ## Postgres
 

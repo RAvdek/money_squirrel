@@ -1,7 +1,6 @@
 pytrends
 pandas
 django
-django-extensions
 psycopg2
 click
 dateutil
