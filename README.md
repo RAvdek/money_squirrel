@@ -13,7 +13,15 @@ Every application has a file `external.py` which has wrapper classes for externa
 
 ## Analysis
 - Mean interest over time is not correlating to next day trade delta. This is part due to the way I'm calculating, but also because there is no baseline of comparison for the search interest. Everything will just be "how popular compared to the most popular item".
-- Should pick an easy "anchoring" search term to include when pulling from trends API.
+- Should pick an easy "anchoring" search term to include when pulling from trends API
+
+## Data thoughts
+
+Need to make choices for initial data
+- GDAX price data with 20sec granularity. Limited to 200 return values per request, so break up requests into hour chunks. Even if we don't seek to trade at that frequency, we can use the values to quantify variability over wider intervals.
+- InterestOverTime with day level granularity for a years worth of data for all search terms.
+- InterestOverTime data points for each day. This can be normalized using the interest over time per day. We can also aggregate as incoming data should be sparse.
+- (Lower priority) InterestByRegion for each day. This can also be normalized.
 
 # Useful help articles
 

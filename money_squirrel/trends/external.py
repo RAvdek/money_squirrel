@@ -8,7 +8,9 @@ KEYS = utils.load_config('keys')
 LOGGER = utils.get_logger(__name__)
 
 
-class TrendInterface(object):
+class TrendDownloader(object):
+
+    MODEL = None
 
     def __init__(self):
         self.client = TrendReq(
@@ -18,10 +20,11 @@ class TrendInterface(object):
         self.start_dt = None
         self.end_dt = None
         self.request_payload = dict()
-        self.data = {
-            'interest_by_region': None,
-            'interest_over_time': None
-        }
+        self.data = []
+        self.geo = None
+
+    def _download_and_set_data(self):
+        raise NotImplementedError
 
     def _correct_input(self):
 
@@ -31,41 +34,14 @@ class TrendInterface(object):
                 self.end_dt.strftime(utils.ISO_HOURLY)
             ])
 
-    def _store_interest_by_region(self):
-        ibr_data = self.data['interest_by_region'].T.to_dict()
-        for geo in ibr_data:
-            ibr = InterestByRegion(
-                geo=geo,
-                start_dt=self.start_dt,
-                end_dt=self.end_dt,
-                scores=ibr_data[geo]
-            )
-            LOGGER.info("Storing interest by region %s", ibr)
-            ibr.save()
-
-    def _store_interest_over_time(self):
-        iot_data = self.data['interest_over_time'].T.to_dict()
-        for ts in iot_data:
-            iot = InterestOverTime(
-                geo=self.request_payload["geo"],
-                dt=ts.to_datetime(),
-                start_dt=self.start_dt,
-                end_dt=self.end_dt,
-                scores=iot_data[ts]
-            )
-            LOGGER.info("Storing interest over time %s", iot)
-            iot.save()
-
-    def _validate_data(self):
+    @staticmethod
+    def _validate_new_data(new_data):
         try:
-            assert type(self.data) is dict
-            for key in self.data:
-                assert type(self.data[key]) is pd.DataFrame
-                assert self.data[key].shape != (0, 0)
+            assert type(new_data) is pd.DataFrame
         except AssertionError as e:
             LOGGER.critical(
                 "Trends data invalid:\n%s",
-                self.data
+                new_data
             )
             raise e
 
@@ -78,6 +54,7 @@ class TrendInterface(object):
     ):
         self.start_dt = start_dt
         self.end_dt = end_dt
+        self.geo = geo
         self.request_payload = {
             "kw_list": kw_list,
             "geo": geo,
@@ -89,15 +66,53 @@ class TrendInterface(object):
             self.request_payload
         )
         self.client.build_payload(**self.request_payload)
-        LOGGER.info("Fetching interest by region")
-        self.data['interest_by_region'] = \
-            self.client.interest_by_region()
-        LOGGER.info("Fetching interest over time")
-        self.data['interest_over_time'] = \
-            self.client.interest_over_time()
-        LOGGER.info("Validating response")
-        self._validate_data()
+        LOGGER.info("Sending payload %s", self.request_payload)
+        self._download_and_set_data()
 
     def store(self):
-        self._store_interest_by_region()
-        self._store_interest_over_time()
+        for datum in self.data:
+            record, created = self.MODEL.objects.get_or_create(**datum)
+            if created:
+                LOGGER.info("Storing data %s",
+                            record)
+                record.save()
+            else:
+                LOGGER.info("Record already exists: %s",
+                            record)
+
+
+class InterestOverTimeDownloader(TrendDownloader):
+
+    MODEL = InterestOverTime
+
+    def _download_and_set_data(self):
+        new_data = self.client.interest_over_time()
+        self._validate_new_data(new_data)
+        new_data = new_data.T.to_dict()
+        self.data = [
+            {
+                "start_dt": self.start_dt,
+                "end_dt": self.end_dt,
+                "geo": self.geo,
+                "scores": new_data[ts],
+                "dt": ts.to_pydatetime()
+            } for ts in new_data
+        ]
+
+
+class InterestByRegionDownloader(TrendDownloader):
+
+    MODEL = InterestByRegion
+
+    def _download_and_set_data(self):
+        new_data = self.client.interest_by_region()
+        self._validate_new_data(new_data)
+        new_data = new_data.T.to_dict()
+        self.data = [
+            {
+                "start_dt": self.start_dt,
+                "end_dt": self.end_dt,
+                "geo": geo,
+                "scores": new_data[geo],
+            } for geo in self.data
+        ]
