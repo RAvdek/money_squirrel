@@ -22,8 +22,6 @@ class GDAXPriceDownloader(GDAX.PublicClient):
 
     def __init__(self):
         GDAX.PublicClient.__init__(self)
-        self.request_payload = dict()
-        self.data = []
         self.start_dt = None
         self.end_dt = None
         self.granularity = None
@@ -36,12 +34,47 @@ class GDAXPriceDownloader(GDAX.PublicClient):
                 assert len(record) is len(self.DATA_KEYS)
         except AssertionError as e:
             LOGGER.critical(
-                "GDAX data failed validation:\n%s",
-                self.data
+                "GDAX response failed validation:\n%s",
+                response
             )
             raise e
 
-    def load(
+    def download_and_clean(self, payload):
+        new_data = self.getProductHistoricRates(
+            **payload
+        )
+        LOGGER.info("Validating response")
+        self._validate_response(new_data)
+        new_data = [
+            {
+                self.DATA_KEYS[i]: datum[i]
+                for i in range(len(self.DATA_KEYS))
+            }
+            for datum in new_data
+        ]
+        for datum in new_data:
+            datum['dt'] = dt.datetime.fromtimestamp(datum['timestamp'])
+            datum.update({
+                'product': payload["product"],
+                'granularity': payload["granularity"],
+            })
+            del datum['timestamp']
+        return new_data
+
+    @staticmethod
+    def _store(records):
+
+        for datum in records:
+            price_record, created = GDAXPrice.objects.get_or_create(**datum)
+            if created:
+                LOGGER.info("Storing GDAX Historical price %s",
+                            price_record)
+                price_record.save()
+            else:
+                LOGGER.info("Record already exists: %s",
+                            price_record)
+
+    def run(
             self,
             start_dt,
             end_dt,
@@ -72,28 +105,8 @@ class GDAXPriceDownloader(GDAX.PublicClient):
                     "Loading from GDAX:  %s",
                     request_payload
                 )
-                new_data = self.getProductHistoricRates(
-                    **self.request_payload
-                )
-                LOGGER.info("Validating response")
-                self._validate_response(new_data)
-                new_data = [
-                    {
-                        self.DATA_KEYS[i]: datum[i]
-                        for i in range(len(self.DATA_KEYS))
-                    }
-                    for datum in new_data
-                ]
-                for datum in new_data:
-                    dt_timestamp = dt.datetime.fromtimestamp(
-                        int(datum.pop('timestamp'))
-                    )
-                    datum.update({
-                        'product': product,
-                        'granularity': granularity,
-                        'dt': dt_timestamp
-                    })
-                self.data += new_data
+                new_data = self.download_and_clean(request_payload)
+                self._store(new_data)
             current_dt = next_dt
             next_dt = min(
                 current_dt + dt.timedelta(
@@ -102,16 +115,3 @@ class GDAXPriceDownloader(GDAX.PublicClient):
                 end_dt
             )
         LOGGER.info("GDAX finished downloading")
-
-    def store(self):
-
-        for datum in self.data:
-            price_record, created = GDAXPrice.objects.get_or_create(**datum)
-            if created:
-                LOGGER.info("Storing GDAX Historical price %s",
-                            price_record)
-                price_record.save()
-            else:
-                LOGGER.info("Record already exists: %s",
-                            price_record)
-
