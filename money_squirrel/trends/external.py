@@ -1,3 +1,4 @@
+import datetime as dt
 import pandas as pd
 from pytrends.request import TrendReq
 from bin import utils
@@ -23,16 +24,16 @@ class TrendDownloader(object):
         self.data = []
         self.geo = None
 
-    def _download_and_set_data(self):
+    def _download_and_clean(self):
         raise NotImplementedError
 
-    def _correct_input(self):
+    @staticmethod
+    def _build_timeframe(start_dt, end_dt):
 
-        self.request_payload["timeframe"] = \
-            " ".join([
-                self.start_dt.strftime(utils.ISO_HOURLY),
-                self.end_dt.strftime(utils.ISO_HOURLY)
-            ])
+        return " ".join([
+            start_dt.strftime(utils.ISO_HOURLY),
+            end_dt.strftime(utils.ISO_HOURLY)
+        ])
 
     @staticmethod
     def _validate_new_data(new_data):
@@ -45,32 +46,8 @@ class TrendDownloader(object):
             )
             raise e
 
-    def load(
-            self,
-            kw_list,
-            start_dt,
-            end_dt,
-            geo=None
-    ):
-        self.start_dt = start_dt
-        self.end_dt = end_dt
-        self.geo = geo
-        self.request_payload = {
-            "kw_list": kw_list,
-            "geo": geo,
-            "timeframe": None
-        }
-        self._correct_input()
-        LOGGER.info(
-            "Building payload for Trends API client:\n%s",
-            self.request_payload
-        )
-        self.client.build_payload(**self.request_payload)
-        LOGGER.info("Sending payload %s", self.request_payload)
-        self._download_and_set_data()
-
-    def store(self):
-        for datum in self.data:
+    def _store(self, data):
+        for datum in data:
             record, created = self.MODEL.objects.get_or_create(**datum)
             if created:
                 LOGGER.info("Storing data %s",
@@ -80,16 +57,40 @@ class TrendDownloader(object):
                 LOGGER.info("Record already exists: %s",
                             record)
 
+    def run(
+            self,
+            kw_list,
+            start_dt,
+            end_dt,
+            geo=None
+    ):
+        self.start_dt = start_dt
+        self.end_dt = end_dt
+        self.geo = geo
+        request_payload = {
+            "kw_list": kw_list,
+            "geo": geo,
+            "timeframe": self._build_timeframe(start_dt, end_dt)
+        }
+        LOGGER.info(
+            "Building payload for Trends API client:\n%s",
+            request_payload
+        )
+        self.client.build_payload(**request_payload)
+        LOGGER.info("Sending payload to Trends API")
+        new_data = self._download_and_clean()
+        self._store(new_data)
+
 
 class InterestOverTimeDownloader(TrendDownloader):
 
     MODEL = InterestOverTime
 
-    def _download_and_set_data(self):
+    def _download_and_clean(self):
         new_data = self.client.interest_over_time()
         self._validate_new_data(new_data)
         new_data = new_data.T.to_dict()
-        self.data = [
+        return [
             {
                 "start_dt": self.start_dt,
                 "end_dt": self.end_dt,
@@ -104,11 +105,11 @@ class InterestByRegionDownloader(TrendDownloader):
 
     MODEL = InterestByRegion
 
-    def _download_and_set_data(self):
+    def _download_and_clean(self):
         new_data = self.client.interest_by_region()
         self._validate_new_data(new_data)
         new_data = new_data.T.to_dict()
-        self.data = [
+        return [
             {
                 "start_dt": self.start_dt,
                 "end_dt": self.end_dt,
@@ -116,3 +117,35 @@ class InterestByRegionDownloader(TrendDownloader):
                 "scores": new_data[geo],
             } for geo in self.data
         ]
+
+
+class IOTHourlyFromConfigDownloader(InterestOverTimeDownloader):
+
+    def __init__(self, config_name):
+        super(IOTHourlyFromConfigDownloader, self).__init__()
+        self.config = utils.load_config('interest_over_time')[config_name]
+
+    def run(self, start_dt, end_dt):
+
+        # Go back in time starting with end date.
+        # use weekly pulls to get hourly data
+        # We should get 1 datapoint of overlap
+        current_end_dt = end_dt
+        current_start_dt = end_dt - dt.timedelta(days=7)
+        while current_end_dt > start_dt:
+            # get all of the search terms
+            super(IOTHourlyFromConfigDownloader, self).run(
+                self.config['kw_list'],
+                start_dt=current_start_dt,
+                end_dt=current_end_dt
+            )
+            # get each search term with tags
+            for term in self.config['kw_list']:
+                kw_list = [' '.join([term, tag]) for tag in self.config['tags']]
+                super(IOTHourlyFromConfigDownloader, self).run(
+                    kw_list,
+                    start_dt=current_start_dt,
+                    end_dt=current_end_dt
+                )
+            current_end_dt = current_start_dt
+            current_start_dt = current_end_dt - dt.timedelta(days=7)

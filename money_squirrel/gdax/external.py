@@ -39,7 +39,7 @@ class GDAXPriceDownloader(GDAX.PublicClient):
             )
             raise e
 
-    def download_and_clean(self, payload):
+    def _download_and_clean(self, payload):
         new_data = self.getProductHistoricRates(
             **payload
         )
@@ -105,7 +105,7 @@ class GDAXPriceDownloader(GDAX.PublicClient):
                     "Loading from GDAX:  %s",
                     request_payload
                 )
-                new_data = self.download_and_clean(request_payload)
+                new_data = self._download_and_clean(request_payload)
                 self._store(new_data)
             current_dt = next_dt
             next_dt = min(
