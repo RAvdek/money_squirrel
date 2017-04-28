@@ -5,7 +5,7 @@ from django.utils.encoding import python_2_unicode_compatible
 
 
 @python_2_unicode_compatible
-class GDAXPrice(models.Model):
+class Quote(models.Model):
 
     product = models.CharField(max_length=10)
     granularity = models.IntegerField()

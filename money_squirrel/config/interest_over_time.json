@@ -1,6 +1,9 @@
 {
-  "version_1": {
+  "coins": {
       "kw_list": ["bitcoin", "ethereum", "litecoin"],
       "tags": ["profit", "scam", "hack", "up", "crash"]
-      }
+  },
+  "finance": {
+      "kw_list": ["capital gains", "tax cut", "usd euro", "usd cny", "usd btc"]
+  }
 }

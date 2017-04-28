@@ -16,7 +16,8 @@ class TrendDownloader(object):
     def __init__(self):
         self.client = TrendReq(
             KEYS['gmail'],
-            KEYS['gpass']
+            KEYS['gpass'],
+            tz=0
         )
         self.start_dt = None
         self.end_dt = None
@@ -64,6 +65,9 @@ class TrendDownloader(object):
             end_dt,
             geo=None
     ):
+        assert type(start_dt) is dt.datetime
+        assert type(end_dt) is dt.datetime
+
         self.start_dt = start_dt
         self.end_dt = end_dt
         self.geo = geo
@@ -149,3 +153,27 @@ class IOTHourlyFromConfigDownloader(InterestOverTimeDownloader):
                 )
             current_end_dt = current_start_dt
             current_start_dt = current_end_dt - dt.timedelta(days=7)
+
+
+class IBRDailyFromConfigDownloader(InterestByRegionDownloader):
+
+    def __init__(self, config_name):
+        super(InterestByRegionDownloader, self).__init__()
+        self.config = utils.load_config('interest_by_region')[config_name]
+
+    def run(self, start_dt, end_dt):
+
+        # Go back in time starting with end date.
+        # use weekly pulls to get hourly data
+        # We should get 1 datapoint of overlap
+        current_end_dt = end_dt
+        current_start_dt = end_dt - dt.timedelta(days=1)
+        while current_end_dt > start_dt:
+            # get all of the search terms
+            super(InterestByRegionDownloader, self).run(
+                self.config['kw_list'],
+                start_dt=current_start_dt,
+                end_dt=current_end_dt
+            )
+            current_end_dt = current_start_dt
+            current_start_dt = current_end_dt - dt.timedelta(days=1)

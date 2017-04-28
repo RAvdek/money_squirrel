@@ -2,12 +2,12 @@ import datetime as dt
 from time import sleep
 import GDAX
 from bin import utils
-from models import GDAXPrice
+from models import Quote
 
 LOGGER = utils.get_logger(__name__)
 
 
-class GDAXPriceDownloader(GDAX.PublicClient):
+class QuoteDownloader(GDAX.PublicClient):
 
     RECORD_LIMIT = 200
     RATE_LIMIT_SLEEP = 1  # limit 3/sec, so being conservative
@@ -65,7 +65,7 @@ class GDAXPriceDownloader(GDAX.PublicClient):
     def _store(records):
 
         for datum in records:
-            price_record, created = GDAXPrice.objects.get_or_create(**datum)
+            price_record, created = Quote.objects.get_or_create(**datum)
             if created:
                 LOGGER.info("Storing GDAX Historical price %s",
                             price_record)

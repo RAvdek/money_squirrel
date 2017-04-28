@@ -2,6 +2,6 @@
 from __future__ import unicode_literals
 
 from django.contrib import admin
-from models import GDAXPrice
+from models import Quote
 
-admin.site.register(GDAXPrice)
+admin.site.register(Quote)

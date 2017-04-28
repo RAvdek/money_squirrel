@@ -10,6 +10,8 @@ Every application has a file `external.py` which has wrapper classes for externa
 
 ### Dev
 
+- Switch all indicies to timestamps
+- Redownload trends data as timezone info is pain in the ass
 - Will have to make custom methods for trends to handle data massaging as they hid the data. Perhaps we can compress data prior to storage.
 - What other data resources should I be downloading data from? I'd like to do some sentiment analysis on news headlines or summaries.
 - Create an "ETL" application for doing cleaning dumps of data. Can just do db to pandas to db.
@@ -77,6 +79,7 @@ We should develop 2-5 models and run in parallel to mark comparison. Some possib
 - [python wrapper of the GDAX API on GitHub](https://github.com/danpaquin/GDAX-Python)
 - [Trends python API wrapper](https://github.com/GeneralMills/pytrends)
 
-### Altcoin articles
+### Altcoin + investing articles
 
 - [CG taxation for virtual currency](https://www.forbes.com/sites/laurashin/2015/12/16/bitcoin-at-tax-time-what-you-need-to-know-about-trading-tipping-mining-and-more/#2492cf3d6bde)
+- [Capital gains and losses overview](http://www.kiplinger.com/article/investing/T056-C000-S001-understanding-capital-gains-and-losses.html)
