@@ -16,16 +16,6 @@ Try algotrading on GDAX (supplemented with Google Trends data)!
 - Phase 4: Productionize model evaluation and purchasing with API integrations
 - Phase 5: Sleep on a pile of money
 
-## What is it???
-
-Try algotrading on GDAX (supplemented with Google Trends data)!
-
-- Phase 1: Create APIs for GDAX and Trends to dump data to a DB
-- Phase 2: Build models on the data so you can predict price in the future
-- Phase 3: Use the price predictions to develop a purchasing strategy
-- Phase 4: Productionize model evaluation and purchasing with API integrations
-- Phase 5: Sleep on a pile of money
-
 ## Installing and running the application
  
 I've only done this on one computer and am guessing it will be a pain setting up on a different one :)
@@ -43,6 +33,12 @@ I've only done this on one computer and am guessing it will be a pain setting up
 }
 
 ```
+
+Use this command to search for your password in the repo history
+```
+git grep <regexp> $(git rev-list --all)
+```
+where `<regexp>` will help you find your password.
 
 ### Set up python
 
