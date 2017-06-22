@@ -2,8 +2,18 @@
 
 ![](https://s-media-cache-ak0.pinimg.com/originals/e3/77/d5/e377d5d4c6e6dfeb0f775275277cbfbd.jpg)
 
-- MS could also be "market sentiment"
-- Squirrels also know when to save their nuts for later
+- Squirrels are experts on when to save and when to cash out their acorns.
+- "MS" could also be "market sentiment"
+
+## What is it???
+
+Try algotrading on GDAX (supplemented with Google Trends data)!
+
+- Phase 1: Create APIs for GDAX and Trends to dump data to a DB
+- Phase 2: Build models on the data so you can predict price in the future
+- Phase 3: Use the price predictions to develop a purchasing strategy
+- Phase 4: Productionize model evaluation and purchasing with API integrations
+- Phase 5: Sleep on a pile of money
 
 ## What is it???
 
