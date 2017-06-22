@@ -2,7 +2,8 @@
 
 ![](https://s-media-cache-ak0.pinimg.com/originals/e3/77/d5/e377d5d4c6e6dfeb0f775275277cbfbd.jpg)
 
-- Squirrels are experts on when to save and when to cash out their acorns.
+- Squirrels are experts on when to save and when to cash out their acorns. 
+- If their brains were big enough to understand money, they would probably be good high-frequency traders.
 - "MS" could also be "market sentiment"
 
 ## What is it???
@@ -16,18 +17,14 @@ Try algotrading on GDAX (supplemented with Google Trends data)!
 - Phase 5: Sleep on a pile of money
 
 ## Installing and running the application
+ 
+I've only done this on one computer and am guessing it will be a pain setting up on a different one :)
 
-Start off in the root of the repo. 
-I've only done this on one computer and am guessing it will be a pain setting up on a new one :)
+### Set up postgres + config files
 
 - Get Postgres installed if you haven't already: `brew install postgres`.
-- Configuring the DB may take a moment. I made this db name `ms`: Please consult [this blog post](http://www.marinamele.com/taskbuster-django-tutorial/install-and-configure-posgresql-for-django)
-- You'll also want to checkout `config/postgres.json`
-- Go to the root directory and run `pip install -e .` to get all the requirements (which you might not already have!).
-- Start the database on you machine (in a separate terminal tab): `postgres -D /usr/local/var/postgres`
-- `python manage.py migrate` will create an empty database
-- `cd money_squirrel` to get into the guts of the code.
-- To start a Jupyter notebook with access to the database, run `python manage.py shell_plus --notebook`.
+- Configuring the DB may take a moment. I made this db name `ms`. You will probably too : Please consult [this blog post](http://www.marinamele.com/taskbuster-django-tutorial/install-and-configure-posgresql-for-django)
+- You'll also want to checkout `config/postgres.json` and modify appropriately.
 - To be able to download your own Google trends data, you'll need to fill out `config/keys.json`. BE CAREFUL NOT TO PUT YOUR PASSWORD ON GITHUB!!! This should be solvable with gitignore (though maybe not the smartest way to do this). It should look like:
 ```
 {
@@ -36,6 +33,23 @@ I've only done this on one computer and am guessing it will be a pain setting up
 }
 
 ```
+
+### Set up python
+
+- Go to the root directory and run `pip install -e .` to get all the requirements (which you might not already have!).
+- I didn't bother with pydata stuff -- pandas, jupyter, etc -- as installing that is usually a mess and I'd rather not be responsible.
+
+### Initialize your DB
+
+- Start the database on you machine (in a separate terminal tab): `postgres -D /usr/local/var/postgres`
+- `python manage.py migrate` will create an empty database.
+- In the future use `makemigrations` to see how your DB changes when you update `models.py` files 
+
+### Start doing stuff
+
+- To download GDAX data, check out `python manage.py download_gdax --help`
+- To download Google Trends data, check out `python manage.py download_trends --help`
+- To start a Jupyter notebook with access to the database, run `python manage.py shell_plus --notebook`. Check out the existing notebooks for get data into a dataframe.
 
 ## Design
 
@@ -59,8 +73,8 @@ I've only done this on one computer and am guessing it will be a pain setting up
 - `ad_hod` is for Jupyter notebooks. For prototyping data cleaning and modeling.
 - `money_squirrel` is all of the django-y things.
 - `config` obv. has configs. 
-  - `coins.json` is used to get coin prices from 
-
+  - `coins.json` is used to list coins with symbols and names. This could update in the future?
+  - `interest_*.json` is used by the Google Trend downloaders to determine search terms.
 
 ## Useful articles
 
@@ -69,6 +83,7 @@ I've only done this on one computer and am guessing it will be a pain setting up
 - [Django tutorial (good reference for basics)](https://docs.djangoproject.com/en/1.11/intro/tutorial01/)
 - [Django shell_plus (for making notebooks)](https://opensourcehacker.com/2014/08/13/turbocharge-your-python-prompt-and-django-shell-with-ipython-notebook/)
 - ['Improperly configured' error when running scripts](http://stackoverflow.com/questions/15556499/django-db-settings-improperly-configured-error)
+- [Adding manage.py commands](https://docs.djangoproject.com/en/1.11/howto/custom-management-commands/)
 
 ### Postgres
 

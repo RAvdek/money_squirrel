@@ -10,7 +10,7 @@ LOGGER = utils.get_logger(__name__)
 class QuoteDownloader(GDAX.PublicClient):
 
     RECORD_LIMIT = 200
-    RATE_LIMIT_SLEEP = 1  # limit 3/sec, so being conservative
+    RATE_LIMIT_SLEEP = 1  # limit 3 requests/sec, so being conservative
     DATA_KEYS = [
         "timestamp",  # storing everything but this
         "low",
