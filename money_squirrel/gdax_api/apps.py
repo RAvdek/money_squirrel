@@ -4,5 +4,5 @@ from __future__ import unicode_literals
 from django.apps import AppConfig
 
 
-class GdaxConfig(AppConfig):
-    name = 'gdax'
+class GdaxApiConfig(AppConfig):
+    name = 'gdax_api'

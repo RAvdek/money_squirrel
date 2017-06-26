@@ -4,5 +4,5 @@ from __future__ import unicode_literals
 from django.apps import AppConfig
 
 
-class TrendsConfig(AppConfig):
-    name = 'trends'
+class TrendsApiConfig(AppConfig):
+    name = 'trends_api'

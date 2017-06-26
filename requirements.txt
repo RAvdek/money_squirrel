@@ -4,5 +4,5 @@ django
 psycopg2
 click
 dateutil
-GDAX
+gdax
 django_extensions

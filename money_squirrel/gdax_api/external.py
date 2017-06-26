@@ -1,13 +1,14 @@
 import datetime as dt
 from time import sleep
-import GDAX
+import requests
+import gdax
 from bin import utils
 from models import Quote
 
 LOGGER = utils.get_logger(__name__)
 
 
-class QuoteDownloader(GDAX.PublicClient):
+class QuoteDownloader(gdax.PublicClient):
 
     RECORD_LIMIT = 200
     RATE_LIMIT_SLEEP = 1  # limit 3 requests/sec, so being conservative
@@ -21,7 +22,7 @@ class QuoteDownloader(GDAX.PublicClient):
     ]
 
     def __init__(self):
-        GDAX.PublicClient.__init__(self)
+        gdax.PublicClient.__init__(self)
         self.start_dt = None
         self.end_dt = None
         self.granularity = None
@@ -40,7 +41,7 @@ class QuoteDownloader(GDAX.PublicClient):
             raise e
 
     def _download_and_clean(self, payload):
-        new_data = self.getProductHistoricRates(
+        new_data = self.get_product_historic_rates(
             **payload
         )
         LOGGER.info("Validating response")
@@ -55,7 +56,7 @@ class QuoteDownloader(GDAX.PublicClient):
         for datum in new_data:
             datum['dt'] = dt.datetime.fromtimestamp(datum['timestamp'])
             datum.update({
-                'product': payload["product"],
+                'product_id': payload["product_id"],
                 'granularity': payload["granularity"],
             })
             del datum['timestamp']
@@ -79,7 +80,8 @@ class QuoteDownloader(GDAX.PublicClient):
             start_dt,
             end_dt,
             granularity=20,
-            product_list=('BTC-USD', 'LTC-USD', 'ETH-USD')
+            product_list=('BTC-USD', 'LTC-USD', 'ETH-USD'),
+            max_failures=10
     ):
         """ Download historical prices """
         self.start_dt = start_dt
@@ -92,26 +94,40 @@ class QuoteDownloader(GDAX.PublicClient):
             ),
             end_dt
         )
+        failure_count = 0
         while current_dt < end_dt:
-            for product in product_list:
-                sleep(self.RATE_LIMIT_SLEEP)
-                request_payload = {
-                    "product": product,
-                    "start": current_dt.strftime(utils.ISO),
-                    "end": next_dt.strftime(utils.ISO),
-                    "granularity": granularity,
-                }
-                LOGGER.info(
-                    "Loading from GDAX:  %s",
-                    request_payload
+            try:
+                for product_id in product_list:
+                    sleep(self.RATE_LIMIT_SLEEP)
+                    request_payload = {
+                        "product_id": product_id,
+                        "start": current_dt.strftime(utils.ISO),
+                        "end": next_dt.strftime(utils.ISO),
+                        "granularity": granularity,
+                    }
+                    LOGGER.info(
+                        "Loading from GDAX:  %s",
+                        request_payload
+                    )
+                    new_data = self._download_and_clean(request_payload)
+                    self._store(new_data)
+                current_dt = next_dt
+                next_dt = min(
+                    current_dt + dt.timedelta(
+                        seconds=granularity * self.RECORD_LIMIT
+                    ),
+                    end_dt
                 )
-                new_data = self._download_and_clean(request_payload)
-                self._store(new_data)
-            current_dt = next_dt
-            next_dt = min(
-                current_dt + dt.timedelta(
-                    seconds=granularity * self.RECORD_LIMIT
-                ),
-                end_dt
-            )
+            except requests.exceptions.ConnectionError:
+                failure_count += 1
+                LOGGER.warn(
+                    "HTTP Connection failure. Failure count: {}"
+                    .format(failure_count)
+                )
+                sleep(60)
+                if failure_count >= max_failures:
+                    raise RuntimeError(
+                        "{} HTTP connection errors. Aborting."
+                        .format(max_failures)
+                    )
         LOGGER.info("GDAX finished downloading")

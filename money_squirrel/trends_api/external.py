@@ -1,4 +1,6 @@
 import datetime as dt
+from time import sleep
+from requests.exceptions import ConnectionError
 import pandas as pd
 from pytrends.request import TrendReq
 from bin import utils
@@ -129,30 +131,44 @@ class IOTHourlyFromConfigDownloader(InterestOverTimeDownloader):
         super(IOTHourlyFromConfigDownloader, self).__init__()
         self.config = utils.load_config('interest_over_time')[config_name]
 
-    def run(self, start_dt, end_dt):
+    def run(self, start_dt, end_dt, max_failures=10):
 
         # Go back in time starting with end date.
         # use weekly pulls to get hourly data
         # We should get 1 datapoint of overlap
         current_end_dt = end_dt
         current_start_dt = end_dt - dt.timedelta(days=7)
+        failure_count = 0
         while current_end_dt > start_dt:
-            # get all of the search terms
-            super(IOTHourlyFromConfigDownloader, self).run(
-                self.config['kw_list'],
-                start_dt=current_start_dt,
-                end_dt=current_end_dt
-            )
-            # get each search term with tags
-            for term in self.config['kw_list']:
-                kw_list = [' '.join([term, tag]) for tag in self.config['tags']]
+            try:
+                # get all of the search terms
                 super(IOTHourlyFromConfigDownloader, self).run(
-                    kw_list,
+                    self.config['kw_list'],
                     start_dt=current_start_dt,
                     end_dt=current_end_dt
                 )
-            current_end_dt = current_start_dt
-            current_start_dt = current_end_dt - dt.timedelta(days=7)
+                # get each search term with tags
+                for term in self.config['kw_list']:
+                    kw_list = [' '.join([term, tag]) for tag in self.config['tags']]
+                    super(IOTHourlyFromConfigDownloader, self).run(
+                        kw_list,
+                        start_dt=current_start_dt,
+                        end_dt=current_end_dt
+                    )
+                current_end_dt = current_start_dt
+                current_start_dt = current_end_dt - dt.timedelta(days=7)
+            except ConnectionError:
+                failure_count += 1
+                LOGGER.warn(
+                    "HTTP Connection failure. Failure count: {}"
+                    .format(failure_count)
+                )
+                sleep(60)
+                if failure_count >= max_failures:
+                    raise RuntimeError(
+                        "{} HTTP connection errors. Aborting."
+                        .format(max_failures)
+                    )
 
 
 class IBRDailyFromConfigDownloader(InterestByRegionDownloader):
@@ -161,19 +177,33 @@ class IBRDailyFromConfigDownloader(InterestByRegionDownloader):
         super(InterestByRegionDownloader, self).__init__()
         self.config = utils.load_config('interest_by_region')[config_name]
 
-    def run(self, start_dt, end_dt):
+    def run(self, start_dt, end_dt, max_failures=0):
 
         # Go back in time starting with end date.
         # use weekly pulls to get hourly data
         # We should get 1 datapoint of overlap
         current_end_dt = end_dt
         current_start_dt = end_dt - dt.timedelta(days=1)
+        failure_count = 0
         while current_end_dt > start_dt:
-            # get all of the search terms
-            super(InterestByRegionDownloader, self).run(
-                self.config['kw_list'],
-                start_dt=current_start_dt,
-                end_dt=current_end_dt
-            )
-            current_end_dt = current_start_dt
-            current_start_dt = current_end_dt - dt.timedelta(days=1)
+            try:
+                # get all of the search terms
+                super(InterestByRegionDownloader, self).run(
+                    self.config['kw_list'],
+                    start_dt=current_start_dt,
+                    end_dt=current_end_dt
+                )
+                current_end_dt = current_start_dt
+                current_start_dt = current_end_dt - dt.timedelta(days=1)
+            except ConnectionError:
+                failure_count += 1
+                LOGGER.warn(
+                    "HTTP Connection failure. Failure count: {}"
+                    .format(failure_count)
+                )
+                sleep(60)
+                if failure_count >= max_failures:
+                    raise RuntimeError(
+                        "{} HTTP connection errors. Aborting."
+                        .format(max_failures)
+                    )
