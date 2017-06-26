@@ -31,31 +31,32 @@ class Command(BaseCommand):
             type=int,
             dest='granularity',
             nargs=1,
-            default=20,
             help='Window in seconds for price history. Default 20'
         )
         parser.add_argument(
             '--max_failures',
             type=int,
             dest='max_failures',
-            default=10,
+            nargs=1,
             help='How many HTTP failures before shut down?'
         )
 
     def handle(self, *args, **options):
 
+        print options
+
         if options['end_date']:
-            end_date = dt_parse(options['end_date'])
+            end_date = dt_parse(options['end_date'][0])
         else:
             end_date = dt.datetime.utcnow()
 
         if options['start_date']:
-            start_date = dt_parse(options['start_date'])
+            start_date = dt_parse(options['start_date'][0])
         else:
             start_date = end_date - dt.timedelta(minutes=5)
 
-        granularity = options['granularity']
-        max_failures = options['max_failures']
+        granularity = options['granularity'][0] if options['granularity'] else 60
+        max_failures = options['max_failures'][0] if options['max_failures'] else 10
 
         assert end_date > start_date
 

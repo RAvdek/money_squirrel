@@ -30,7 +30,6 @@ class Command(BaseCommand):
         parser.add_argument(
             '--config',
             type=str,
-            dest='config',
             default='coins',
             help='Choose a keyword config from config/interest_over_time.json'
         )
@@ -38,24 +37,24 @@ class Command(BaseCommand):
             '--max_failures',
             type=int,
             dest='max_failures',
-            default=10,
+            nargs=1,
             help='How many HTTP failures before shut down?'
         )
 
     def handle(self, *args, **options):
 
         if options['end_date']:
-            end_date = dt_parse(options['end_date'])
+            end_date = dt_parse(options['end_date'][0])
         else:
             end_date = dt.datetime.utcnow()
 
         if options['start_date']:
-            start_date = dt_parse(options['start_date'])
+            start_date = dt_parse(options['start_date'][0])
         else:
             start_date = end_date - dt.timedelta(days=7)
 
-        config = options['config']
-        max_failures = options['max_failures']
+        config = options['config'] if options['config'] else 'coins'
+        max_failures = options['max_failures'][0] if options['max_failures'] else 10
 
         assert end_date > start_date
 

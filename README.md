@@ -108,7 +108,7 @@ where `<regexp>` will help you find your password.
 
 ### Research papers on crypto pricing
 
-I'm not a huge fan of any of these: Good for generating ideas, but backtesting evaluation methods are all super opaque.
+Good for generating ideas, but backtesting evaluation methods are all super opaque.
 
 - [Latent source model for price prediction](https://arxiv.org/pdf/1410.1231v1.pdf)
 - [Uses sentiment analysis to predict bitcoin price swings](https://arxiv.org/abs/1506.01513)
