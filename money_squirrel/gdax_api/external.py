@@ -118,11 +118,11 @@ class QuoteDownloader(gdax.PublicClient):
                     ),
                     end_dt
                 )
-            except requests.exceptions.ConnectionError:
+            except (requests.exceptions.ConnectionError, ValueError) as e:
                 failure_count += 1
                 LOGGER.warn(
-                    "HTTP Connection failure. Failure count: {}"
-                    .format(failure_count)
+                    "HTTP Connection failure. Failure count: {}. Error message: {}"
+                    .format(failure_count, str(e))
                 )
                 sleep(60)
                 if failure_count >= max_failures:
