@@ -11,7 +11,7 @@ LOGGER = utils.get_logger(__name__)
 class QuoteDownloader(gdax.PublicClient):
 
     RECORD_LIMIT = 200
-    RATE_LIMIT_SLEEP = 1  # limit 3 requests/sec, so being conservative
+    RATE_LIMIT_SLEEP = 2  # limit 3 requests/sec, so being conservative
     DATA_KEYS = [
         "timestamp",  # storing everything but this
         "low",
@@ -80,7 +80,7 @@ class QuoteDownloader(gdax.PublicClient):
             start_dt,
             end_dt,
             granularity=20,
-            product_list=('BTC-USD', 'LTC-USD', 'ETH-USD'),
+            product_list=utils.PRODUCT_LIST,
             max_failures=10
     ):
         """ Download historical prices """

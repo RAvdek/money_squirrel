@@ -9,6 +9,13 @@ logging.basicConfig(format='%(asctime)s|%(name)s|%(levelname)s|%(message)s')
 ISO_DAILY = '%Y-%m-%d'
 ISO_HOURLY = '%Y-%m-%dT%H'
 ISO = '%Y-%m-%dT%H:%M:%S'
+PRODUCT_LIST = (
+    'BTC-USD',
+    'LTC-USD',
+    'ETH-USD',
+    'LTC-BTC',
+    'ETH-BTC'
+)
 
 
 def get_logger(name):
