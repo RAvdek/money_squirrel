@@ -12,6 +12,7 @@ class InterestByRegion(models.Model):
     geo = models.CharField(max_length=100)
     start_dt = models.DateTimeField()
     end_dt = models.DateTimeField()
+    search_terms = models.CharField(max_length=200, default=None, blank=True, null=True)
     scores = JSONField()
 
     def __str__(self):
@@ -20,6 +21,7 @@ class InterestByRegion(models.Model):
             "start_dt": self.start_dt,
             "end_dt": self.start_dt,
             "scores": self.scores,
+            "search_terms": self.search_terms
         })
 
 
@@ -30,6 +32,7 @@ class InterestOverTime(models.Model):
     dt = models.DateTimeField(default=None, blank=True, null=True)
     start_dt = models.DateTimeField()
     end_dt = models.DateTimeField()
+    search_terms = models.CharField(max_length=200, default=None, blank=True, null=True)
     scores = JSONField()
 
     def __str__(self):
@@ -39,4 +42,5 @@ class InterestOverTime(models.Model):
             "start_dt": self.start_dt,
             "end_dt": self.end_dt,
             "scores": self.scores,
+            "search_terms": self.search_terms
         })

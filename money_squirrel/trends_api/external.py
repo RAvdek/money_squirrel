@@ -51,6 +51,7 @@ class TrendDownloader(object):
 
     def _store(self, data):
         for datum in data:
+            datum['search_terms'] = ', '.join(sorted(datum['scores'].keys()))
             record, created = self.MODEL.objects.get_or_create(**datum)
             if created:
                 LOGGER.info("Storing data %s",
@@ -155,7 +156,7 @@ class IOTHourlyFromConfigDownloader(InterestOverTimeDownloader):
                         start_dt=current_start_dt,
                         end_dt=current_end_dt
                     )
-                current_end_dt = current_start_dt
+                current_end_dt = current_end_dt - dt.timedelta(hours=1)
                 current_start_dt = current_end_dt - dt.timedelta(days=7)
             except ConnectionError:
                 failure_count += 1
