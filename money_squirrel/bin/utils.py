@@ -2,6 +2,8 @@ import os
 import json
 import logging
 import datetime as dt
+from dateutil.parser import parse as dt_parse
+from pytz import timezone
 import psycopg2
 import pandas as pd
 
@@ -9,6 +11,12 @@ logging.basicConfig(format='%(asctime)s|%(name)s|%(levelname)s|%(message)s')
 ISO_DAILY = '%Y-%m-%d'
 ISO_HOURLY = '%Y-%m-%dT%H'
 ISO = '%Y-%m-%dT%H:%M:%S'
+CURRENCY_LIST = (
+    'USD',
+    'BTC',
+    'ETH',
+    'LTC'
+)
 PRODUCT_LIST = (
     'BTC-USD',
     'LTC-USD',
@@ -16,6 +24,7 @@ PRODUCT_LIST = (
     'LTC-BTC',
     'ETH-BTC'
 )
+UTC = timezone('UTC')
 
 
 def get_logger(name):
@@ -58,10 +67,23 @@ def dt_to_ts(datetime):
 
 
 def ts_to_dt(timestamp):
-    return dt.datetime.fromtimestamp(float(timestamp))
+    return dt.datetime.fromtimestamp(
+        float(timestamp),
+        tz=UTC
+    )
 
 
-def fill_dt_gaps(df, start_dt, end_dt, window_seconds, input_dt=True, output_dt=True):
+def get_utc_dt(*args):
+    return dt.datetime(*args, tzinfo=UTC)
+
+
+def parse_dt_str(dt_str):
+    return dt_parse(dt_str).replace(tzinfo=UTC)
+
+
+def fill_dt_gaps(df, start_dt, end_dt,
+                 window_seconds, input_dt=True,
+                 output_dt=True):
 
     start_ts = dt_to_ts(start_dt)
     end_ts = dt_to_ts(end_dt)
