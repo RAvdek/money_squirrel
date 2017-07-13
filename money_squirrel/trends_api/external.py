@@ -8,14 +8,13 @@ from models import InterestByRegion, InterestOverTime
 
 
 KEYS = utils.load_config('keys')
-LOGGER = utils.get_logger(__name__)
 
 
 class TrendDownloader(object):
 
     MODEL = None
 
-    def __init__(self):
+    def __init__(self, log_level=None):
         self.client = TrendReq(
             KEYS['gmail'],
             KEYS['gpass'],
@@ -26,6 +25,7 @@ class TrendDownloader(object):
         self.request_payload = dict()
         self.data = []
         self.geo = None
+        self.logger = utils.get_logger(__name__, log_level)
 
     def _download_and_clean(self):
         raise NotImplementedError
@@ -38,12 +38,11 @@ class TrendDownloader(object):
             end_dt.strftime(utils.ISO_HOURLY)
         ])
 
-    @staticmethod
-    def _validate_new_data(new_data):
+    def _validate_new_data(self, new_data):
         try:
             assert type(new_data) is pd.DataFrame
         except AssertionError as e:
-            LOGGER.critical(
+            self.logger.critical(
                 "Trends data invalid:\n%s",
                 new_data
             )
@@ -54,12 +53,16 @@ class TrendDownloader(object):
             datum['search_terms'] = ', '.join(sorted(datum['scores'].keys()))
             record, created = self.MODEL.objects.get_or_create(**datum)
             if created:
-                LOGGER.info("Storing data %s",
-                            record)
+                self.logger.debug(
+                    "Storing data %s",
+                    record
+                )
                 record.save()
             else:
-                LOGGER.info("Record already exists: %s",
-                            record)
+                self.logger.debug(
+                    "Record already exists: %s",
+                    record
+                )
 
     def run(
             self,
@@ -71,20 +74,20 @@ class TrendDownloader(object):
         assert type(start_dt) is dt.datetime
         assert type(end_dt) is dt.datetime
 
-        self.start_dt = start_dt
-        self.end_dt = end_dt
+        self.start_dt = start_dt.replace(minute=0, second=0, microsecond=0)
+        self.end_dt = end_dt.replace(minute=0, second=0, microsecond=0)
         self.geo = geo
         request_payload = {
             "kw_list": kw_list,
             "geo": geo,
             "timeframe": self._build_timeframe(start_dt, end_dt)
         }
-        LOGGER.info(
+        self.logger.debug(
             "Building payload for Trends API client:\n%s",
             request_payload
         )
         self.client.build_payload(**request_payload)
-        LOGGER.info("Sending payload to Trends API")
+        self.logger.info("Sending payload to Trends API")
         new_data = self._download_and_clean()
         self._store(new_data)
 
@@ -128,11 +131,11 @@ class InterestByRegionDownloader(TrendDownloader):
 
 class IOTHourlyFromConfigDownloader(InterestOverTimeDownloader):
 
-    def __init__(self, config_name):
-        super(IOTHourlyFromConfigDownloader, self).__init__()
+    def __init__(self, config_name, log_level=None):
+        super(IOTHourlyFromConfigDownloader, self).__init__(log_level=log_level)
         self.config = utils.load_config('interest_over_time')[config_name]
 
-    def run(self, start_dt, end_dt, max_failures=10):
+    def run(self, start_dt, end_dt, max_failures=10, tags=True):
 
         # Go back in time starting with end date.
         # use weekly pulls to get hourly data
@@ -149,18 +152,19 @@ class IOTHourlyFromConfigDownloader(InterestOverTimeDownloader):
                     end_dt=current_end_dt
                 )
                 # get each search term with tags
-                for term in self.config['kw_list']:
-                    kw_list = [' '.join([term, tag]) for tag in self.config['tags']]
-                    super(IOTHourlyFromConfigDownloader, self).run(
-                        kw_list,
-                        start_dt=current_start_dt,
-                        end_dt=current_end_dt
-                    )
+                if tags:
+                    for term in self.config['kw_list']:
+                        kw_list = [' '.join([term, tag]) for tag in self.config['tags']]
+                        super(IOTHourlyFromConfigDownloader, self).run(
+                            kw_list,
+                            start_dt=current_start_dt,
+                            end_dt=current_end_dt
+                        )
                 current_end_dt = current_end_dt - dt.timedelta(hours=1)
                 current_start_dt = current_end_dt - dt.timedelta(days=7)
             except ConnectionError:
                 failure_count += 1
-                LOGGER.warn(
+                self.logger.warn(
                     "HTTP Connection failure. Failure count: {}"
                     .format(failure_count)
                 )
@@ -174,8 +178,8 @@ class IOTHourlyFromConfigDownloader(InterestOverTimeDownloader):
 
 class IBRDailyFromConfigDownloader(InterestByRegionDownloader):
 
-    def __init__(self, config_name):
-        super(InterestByRegionDownloader, self).__init__()
+    def __init__(self, config_name, log_level=None):
+        super(InterestByRegionDownloader, self).__init__(log_level=log_level)
         self.config = utils.load_config('interest_by_region')[config_name]
 
     def run(self, start_dt, end_dt, max_failures=0):
@@ -198,7 +202,7 @@ class IBRDailyFromConfigDownloader(InterestByRegionDownloader):
                 current_start_dt = current_end_dt - dt.timedelta(days=1)
             except ConnectionError:
                 failure_count += 1
-                LOGGER.warn(
+                self.logger.warn(
                     "HTTP Connection failure. Failure count: {}"
                     .format(failure_count)
                 )

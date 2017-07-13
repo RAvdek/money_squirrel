@@ -1,6 +1,6 @@
 import datetime as dt
 from dateutil.parser import parse as dt_parse
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 from gdax_api.external import QuoteDownloader
 from bin import utils
 
@@ -48,6 +48,13 @@ class Command(BaseCommand):
             nargs='*',
             help='Products to download, eg. BTC-USD, LTC-BTC, etc. Multiple products possible.'
         )
+        parser.add_argument(
+            '--log_level',
+            type=str,
+            dest='log_level',
+            nargs=1,
+            help='Python logging level'
+        )
 
     def handle(self, *args, **options):
 
@@ -62,10 +69,11 @@ class Command(BaseCommand):
         product_list = options['product'] \
             if options['product'] \
             else utils.PRODUCT_LIST
+        log_level = options['log_level'][0] if options['log_level'] else 'INFO'
 
         assert end_date > start_date
 
-        qd = QuoteDownloader()
+        qd = QuoteDownloader(log_level)
         qd.run(
             start_dt=start_date,
             end_dt=end_date,

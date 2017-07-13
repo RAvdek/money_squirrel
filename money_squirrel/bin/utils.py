@@ -27,10 +27,20 @@ PRODUCT_LIST = (
 UTC = timezone('UTC')
 
 
-def get_logger(name):
+def get_logger(name, level=None):
+
+    if not level:
+        level = 'INFO'
+    logging_levels = {
+        'DEBUG': logging.DEBUG,
+        'INFO': logging.INFO,
+        'WARNING': logging.WARNING,
+        'ERROR': logging.ERROR,
+        'CRITICAL': logging.CRITICAL
+    }
 
     logger = logging.getLogger(name)
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging_levels[level])
     logger.info("Instantiated logger w/ name=%s", name)
     return logger
 

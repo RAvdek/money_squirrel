@@ -40,6 +40,18 @@ class Command(BaseCommand):
             nargs=1,
             help='How many HTTP failures before shut down?'
         )
+        parser.add_argument(
+            '--log_level',
+            type=str,
+            dest='log_level',
+            nargs=1,
+            help='Python logging level'
+        )
+        parser.add_argument(
+            '--tags',
+            action='store_true',
+            help='Download search terms with tags'
+        )
 
     def handle(self, *args, **options):
 
@@ -55,12 +67,14 @@ class Command(BaseCommand):
 
         config = options['config'] if options['config'] else 'coins'
         max_failures = options['max_failures'][0] if options['max_failures'] else 10
+        log_level = options['log_level'][0] if options['log_level'] else 'INFO'
 
         assert end_date > start_date
 
-        downloader = IOTHourlyFromConfigDownloader(config)
+        downloader = IOTHourlyFromConfigDownloader(config, log_level)
         downloader.run(
             start_dt=start_date,
             end_dt=end_date,
-            max_failures=max_failures
+            max_failures=max_failures,
+            tags=options['tags']
         )

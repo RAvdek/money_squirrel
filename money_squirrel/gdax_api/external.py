@@ -5,8 +5,6 @@ import gdax
 from bin import utils
 from models import Quote
 
-LOGGER = utils.get_logger(__name__)
-
 
 class QuoteDownloader(gdax.PublicClient):
 
@@ -21,11 +19,12 @@ class QuoteDownloader(gdax.PublicClient):
         "volume"
     ]
 
-    def __init__(self):
+    def __init__(self, log_level='INFO'):
         gdax.PublicClient.__init__(self)
         self.start_dt = None
         self.end_dt = None
         self.granularity = None
+        self.logger = utils.get_logger(__name__, log_level)
 
     def _validate_response(self, response):
         try:
@@ -34,7 +33,7 @@ class QuoteDownloader(gdax.PublicClient):
                 assert type(record) is list
                 assert len(record) is len(self.DATA_KEYS)
         except AssertionError as e:
-            LOGGER.critical(
+            self.logger.critical(
                 "GDAX response failed validation:\n%s",
                 response
             )
@@ -44,7 +43,7 @@ class QuoteDownloader(gdax.PublicClient):
         new_data = self.get_product_historic_rates(
             **payload
         )
-        LOGGER.info("Validating response")
+        self.logger.info("Validating response")
         self._validate_response(new_data)
         new_data = [
             {
@@ -62,18 +61,21 @@ class QuoteDownloader(gdax.PublicClient):
             del datum['timestamp']
         return new_data
 
-    @staticmethod
-    def _store(records):
+    def _store(self, records):
 
         for datum in records:
             price_record, created = Quote.objects.get_or_create(**datum)
             if created:
-                LOGGER.info("Storing GDAX Historical price %s",
-                            price_record)
+                self.logger.debug(
+                    "Storing GDAX Historical price %s",
+                    price_record
+                )
                 price_record.save()
             else:
-                LOGGER.info("Record already exists: %s",
-                            price_record)
+                self.logger.debug(
+                    "Record already exists: %s",
+                    price_record
+                )
 
     def run(
             self,
@@ -105,7 +107,7 @@ class QuoteDownloader(gdax.PublicClient):
                         "end": next_dt.strftime(utils.ISO),
                         "granularity": granularity,
                     }
-                    LOGGER.info(
+                    self.logger.info(
                         "Loading from GDAX:  %s",
                         request_payload
                     )
@@ -120,7 +122,7 @@ class QuoteDownloader(gdax.PublicClient):
                 )
             except (requests.exceptions.ConnectionError, ValueError) as e:
                 failure_count += 1
-                LOGGER.warn(
+                self.logger.warn(
                     "HTTP Connection failure. Failure count: {}. Error message: {}"
                     .format(failure_count, str(e))
                 )
@@ -130,4 +132,4 @@ class QuoteDownloader(gdax.PublicClient):
                         "{} HTTP connection errors. Aborting."
                         .format(max_failures)
                     )
-        LOGGER.info("GDAX finished downloading")
+        self.logger.info("GDAX finished downloading")
